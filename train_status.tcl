@@ -13,6 +13,7 @@ if {$argc < 3} {
 set request_from [lindex $argv 0]
 set request_to [lindex $argv 1]
 set request_nb_trains [lindex $argv 2]
+set timestamp ""
 
 proc every {ms cmd} {
   {*}$cmd
@@ -49,13 +50,15 @@ proc refresh {} {
   global request_to
   global request_nb_trains
   global path
+  global timestamp
   
   set response [exec $path/request.sh $request_from $request_to $request_nb_trains]
-  
   set header [string range $response 0 [string first "<lt5:trainServices>" $response]]
 
-  set timestamp "[clock format [clock scan [string range [get_field $header lt4:generatedAt] 0 18] -format {%Y-%m-%dT%T}] -format {%T %d/%m/%Y}]"
-  set info [string map {"&amp;" "&" "&lt;" "<" "&gt;" ">" "&quot;" "\""} [join [get_section $response "lt:message"] "\n"]]
+  catch {
+    set timestamp "[clock format [clock scan [string range [get_field $header lt4:generatedAt] 0 18] -format {%Y-%m-%dT%T}] -format {%T %d/%m/%Y}]"
+  }
+  set info [string map {"&amp;amp;" "&" "&lt;" "<" "&gt;" ">" "&quot;" "\""} [join [get_section $response "lt:message"] "\n"]]
   set from [get_field $header "lt4:locationName"]
   set to [get_field $header "lt4:filterLocationName"]
 
@@ -114,6 +117,7 @@ proc refresh {} {
     grid .trains.train${i} -column 0 -row ${i} -sticky nsew
     grid columnconfigure .trains.train${i} 0 -weight 1
     grid columnconfigure .trains.train${i} 1 -weight 1
+    grid rowconfigure .trains.train${i} 2 -weight 1
 
     label .trains.train${i}.std -text $std($i)
     label .trains.train${i}.etd -text $etd($i)
@@ -130,7 +134,7 @@ proc refresh {} {
     }
     
     if {$train_message($i) != ""} {
-      message .trains.train${i}.train_message -text $train_message($i) -fg red
+      message .trains.train${i}.train_message -text $train_message($i) -fg red -aspect 400
       grid .trains.train${i}.train_message -column 0 -row 2 -columnspan 2
     }
   }
